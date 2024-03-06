@@ -1,15 +1,14 @@
 import socketio
 import time
 import gevent
+import board
 from flask import Flask, Response
 from flask_socketio import SocketIO
-#from picamera import PiCamera
 from io import BytesIO
 from camera_output import CameraOutput
 from drivers.servo import Servo
-from drivers.lps2X import Barometer, BAROMETER_TYPE
 from drivers.lps2x_full import LPS22
-import board
+from drivers.camera import Camera
 
 allow_launch = False
 
@@ -17,7 +16,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 servo = Servo(18)
 barometer = LPS22(board.I2C())
-#camera = PiCamera()
+camera = Camera()
 
 def altitude_from_pressure_temperature(pressure, temperature):
     """
@@ -70,6 +69,8 @@ def disconnect():
 @socketio.on('arm-parachute')
 def arm_parachute():
     print('arm-parachute')
+    
+    camera.start()
 
     send_status(True, False)
 
@@ -146,4 +147,4 @@ if __name__ == '__main__':
 
         socketio.run(app, port=5000, host='0.0.0.0', debug=False)
     except KeyboardInterrupt:
-        camera.stop_recording()
+        camera.stop()

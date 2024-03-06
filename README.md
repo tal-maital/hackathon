@@ -1,8 +1,11 @@
 ### Installation
 
 sudo apt-get update
+sudo apt-get upgrade
+sudo rm /usr/lib/python3.11/EXTERNALLY-MANAGED
 sudo apt-get install pigpio python-pigpio python3-pigpio
-pip3 install adafruit-circuitpython-lsm6ds adafruit-circuitpython-lps2x adafruit-circuitpython-bno055 python-socketio eventlet flask-socketio gevent gevent-websocket, and picamera
+pip3 install adafruit-circuitpython-lsm6ds adafruit-circuitpython-lps2x adafruit-circuitpython-bno055 python-socketio eventlet flask-socketio gevent gevent-websocket
+sudo apt install -y python3-picamera2 --no-install-recommends
 sudo pigpiod
 
 ### Examples
