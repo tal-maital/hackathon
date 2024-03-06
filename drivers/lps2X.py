@@ -10,7 +10,7 @@ class BAROMETER_TYPE(Enum):
 class Barometer():
     def __init__(self, bar_type):
         i2c = board.I2C() 
-        print(i2c)
+        print(board.SCL, board.SDA)
         
         if bar_type == BAROMETER_TYPE.LPS22:
             self.lps = adafruit_lps2x.LPS22(i2c)
