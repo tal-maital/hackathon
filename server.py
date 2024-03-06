@@ -11,7 +11,7 @@ from drivers.servo import Servo
 allow_launch = False
 
 app = Flask(__name__)
-socketio = SocketIO(app, path='/api/socket.io', cors_allowed_origins='*', async_mode='gevent')
+socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 servo = Servo(18)
 
 def send_status(parachute_armed, parachute_deployed, is_launched = False):
