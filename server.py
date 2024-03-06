@@ -133,7 +133,7 @@ def record_video():
 
 def read_and_send_data():
     while True:
-        print(altitude_from_pressure_temperature(barometer.pressure, barometer.temperature)
+        print(altitude_from_pressure_temperature(barometer.pressure, barometer.temperature))
         send_rocket_data(1)
         gevent.sleep(1) # Send data every 1 second, change this
 
