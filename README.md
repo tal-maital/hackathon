@@ -1,9 +1,11 @@
 ### Installation
 
+```
 sudo apt-get update
 sudo apt-get install pigpio python-pigpio python3-pigpio
 pip3 install adafruit-circuitpython-lsm6ds adafruit-circuitpython-lps2x adafruit-circuitpython-bno055 python-socketio eventlet flask-socketio gevent gevent-websocket picamera
 sudo pigpiod
+```
 
 ### Examples
 
