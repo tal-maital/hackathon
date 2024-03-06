@@ -19,6 +19,32 @@ servo = Servo(18)
 barometer = LPS22(board.I2C())
 camera = PiCamera()
 
+def altitude_from_pressure_temperature(pressure, temperature):
+    """
+    Calculate altitude from atmospheric pressure and temperature.
+    
+    Parameters:
+    - pressure: Atmospheric pressure in hPa (hectopascals)
+    - temperature: Ambient temperature in degrees Celsius
+    
+    Returns:
+    - Altitude in meters
+    """
+    # Constants
+    P0 = 1013.25  # Sea level standard atmospheric pressure, hPa
+    T0 = 288.15  # Sea level standard temperature, Kelvin
+    g = 9.80665  # Gravitational acceleration, m/s^2
+    L = 0.0065  # Temperature lapse rate, K/m
+    R = 287.05  # Ideal gas constant, J/(kg·K)
+    
+    # Convert temperature from Celsius to Kelvin
+    T = temperature + 273.15
+    
+    # Calculate altitude using the hypsometric formula
+    altitude = (T0 / L) * (((pressure / P0) ** (-(R * L) / (g * R))) - 1)
+    
+    return altitude
+
 def send_status(parachute_armed, parachute_deployed, is_launched = False):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed, 'isLaunched': is_launched})
 
@@ -107,7 +133,7 @@ def record_video():
 
 def read_and_send_data():
     while True:
-        print(barometer.pressure)
+        print(altitude_from_pressure_temperature(barometer.pressure, barometer.temperature)
         send_rocket_data(1)
         gevent.sleep(1) # Send data every 1 second, change this
 
