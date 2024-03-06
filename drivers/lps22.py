@@ -4,6 +4,7 @@
 # Author: shaoziyang (shaoziyang@micropython.org.cn)
 # v1.0 2016.4
 # v2.0 2019.7
+import board
 
 LPS22_CTRL_REG1    = 0x10
 LPS22_CTRL_REG2    = 0x11
@@ -13,8 +14,8 @@ LPS22_PRESS_OUT_XL = 0x28
 LPS22_PRESS_OUT_L  = 0x29
 
 class LPS22():
-    def __init__(self, i2c, addr = 0x5D):
-        self.i2c = i2c
+    def __init__(self, addr = 0x5D):
+        self.i2c = board.I2C()
         self.addr = addr
         self.tb = bytearray(1)
         self.rb = bytearray(1)
