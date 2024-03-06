@@ -108,7 +108,7 @@ def cancel_launch():
 
 def read_and_send_data():
     while True:
-        print(barometer.altitude())
+        print(barometer.pressure)
         send_rocket_data(1)
         gevent.sleep(1) # Send data every 1 second, change this
 
