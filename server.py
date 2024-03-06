@@ -8,14 +8,15 @@ from io import BytesIO
 from camera_output import CameraOutput
 from drivers.servo import Servo
 from drivers.lps2X import Barometer, BAROMETER_TYPE
-from drivers.lps22 import LPS22
+from drivers.lps2x_full import LPS22
+import board
 
 allow_launch = False
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 servo = Servo(18)
-barometer = LPS22()
+barometer = LPS22(board.I2C())
 
 def send_status(parachute_armed, parachute_deployed, is_launched = False):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed, 'isLaunched': is_launched})
