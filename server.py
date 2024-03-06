@@ -7,12 +7,14 @@ from flask_socketio import SocketIO
 from io import BytesIO
 from camera_output import CameraOutput
 from drivers.servo import Servo
+from drivers.lps2X import Barometer, BAROMETER_TYPE
 
 allow_launch = False
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 servo = Servo(18)
+barometer = Barometer(BAROMETER_TYPE.LPS22)
 
 def send_status(parachute_armed, parachute_deployed, is_launched = False):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed, 'isLaunched': is_launched})
@@ -104,6 +106,7 @@ def cancel_launch():
 
 def read_and_send_data():
     while True:
+        print(barometer.getPressure())
         send_rocket_data(1)
         gevent.sleep(1) # Send data every 1 second, change this
 
