@@ -6,12 +6,16 @@ from flask_socketio import SocketIO
 #from picamera import PiCamera
 from io import BytesIO
 from camera_output import CameraOutput
+from drivers.servo import Servo
+
+allow_launch = False
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
+servo = Servo(18)
 
-def send_status(parachute_armed, parachute_deployed):
-    socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed})
+def send_status(parachute_armed, parachute_deployed, is_launched = False):
+    socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed, 'isLaunched': is_launched})
 
 def send_rocket_data(altitude):
     socketio.emit('rocket-data', { 'timestamp': time.time(), 'altitude': altitude})
@@ -57,8 +61,26 @@ def arm_parachute():
     send_status(True, True)
 
 @socketio.on('launch')
-def arm_parachute():
+def launch():
     print('launch')
+    send_status(True, True, True)
+    
+    global allow_launch 
+
+    allow_launch = True
+    gevent.sleep(5)
+    
+    if allow_launch:
+        servo.right()
+        gevent.sleep(2)
+        servo.stop()
+        allow_launch = False
+
+@socketio.on('abort-launch')
+def cancel_launch():
+    print('abort launch')
+    global allow_launch 
+    allow_launch = False
 
 # def record_video():
 #     camera = PiCamera()
@@ -69,7 +91,7 @@ def arm_parachute():
 
 # def generate_camera_stream(output):
 #     while True:
-#         with output.condition:
+#         with output.condition:h264
 #             output.condition.wait()
 #             frame = output.frame
 #         yield (b'--frame\r\n'
