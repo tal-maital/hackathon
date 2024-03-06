@@ -3,7 +3,7 @@ import time
 import gevent
 from flask import Flask, Response
 from flask_socketio import SocketIO
-from picamera import PiCamera
+#from picamera import PiCamera
 from io import BytesIO
 from camera_output import CameraOutput
 
@@ -60,25 +60,25 @@ def arm_parachute():
 def arm_parachute():
     print('launch')
 
-def record_video():
-    camera = PiCamera()
-    camera.resolution = (640, 480)
-    camera.start_recording(f'video{time.time()}.h264')
-    camera.wait_recording(60)
-    camera.stop_recording()
+# def record_video():
+#     camera = PiCamera()
+#     camera.resolution = (640, 480)
+#     camera.start_recording(f'video{time.time()}.h264')
+#     camera.wait_recording(60)
+#     camera.stop_recording()
 
-def generate_camera_stream(output):
-    while True:
-        with output.condition:
-            output.condition.wait()
-            frame = output.frame
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+# def generate_camera_stream(output):
+#     while True:
+#         with output.condition:
+#             output.condition.wait()
+#             frame = output.frame
+#         yield (b'--frame\r\n'
+#                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-@app.route('/stream')
-def video_feed():
-    return Response(generate_camera_stream(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+# @app.route('/stream')
+# def video_feed():
+#     return Response(generate_camera_stream(),
+#                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 def read_and_send_data():
     while True:
@@ -89,6 +89,6 @@ if __name__ == '__main__':
     output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
 
     gevent.spawn(read_and_send_data)
-    gevent.spawn(record_video)
+    #gevent.spawn(record_video)
 
     socketio.run(app, port=5000, host='0.0.0.0', debug=False)
