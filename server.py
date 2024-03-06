@@ -3,7 +3,7 @@ import time
 import gevent
 from flask import Flask, Response
 from flask_socketio import SocketIO
-#from picamera import PiCamera
+from picamera import PiCamera
 from io import BytesIO
 from camera_output import CameraOutput
 from drivers.servo import Servo
@@ -17,6 +17,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 servo = Servo(18)
 barometer = LPS22(board.I2C())
+camera = PiCamera()
 
 def send_status(parachute_armed, parachute_deployed, is_launched = False):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed, 'isLaunched': is_launched})
@@ -86,12 +87,10 @@ def cancel_launch():
     global allow_launch 
     allow_launch = False
 
-# def record_video():
-#     camera = PiCamera()
-#     camera.resolution = (640, 480)
-#     camera.start_recording(f'video{time.time()}.h264')
-#     camera.wait_recording(60)
-#     camera.stop_recording()
+def record_video():
+    camera.resolution = (640, 480)
+    camera.start_recording(f'video{time.time()}.h264')
+    camera.wait_recording(1200)
 
 # def generate_camera_stream(output):
 #     while True:
@@ -113,9 +112,12 @@ def read_and_send_data():
         gevent.sleep(1) # Send data every 1 second, change this
 
 if __name__ == '__main__':
-    output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
+    try:
+        output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
 
-    gevent.spawn(read_and_send_data)
-    #gevent.spawn(record_video)
+        gevent.spawn(read_and_send_data)
+        gevent.spawn(record_video)
 
-    socketio.run(app, port=5000, host='0.0.0.0', debug=False)
+        socketio.run(app, port=5000, host='0.0.0.0', debug=False)
+    except KeyboardInterrupt:
+        camera.stop_recording()
