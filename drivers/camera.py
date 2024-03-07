@@ -1,4 +1,5 @@
 import time
+import gevent
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 
@@ -9,8 +10,11 @@ class Camera():
         self.picam2.configure(video_config)
         self.encoder = H264Encoder(10000000)
 
-    def start(self):
+    def _start(self):
         self.picam2.start_recording(self.encoder, f'launch-{time.time()}.h264')
+
+    def start(self):
+        gevent.spawn(self._start)
 
     def stop(self):
         self.picam2.stop_recording()

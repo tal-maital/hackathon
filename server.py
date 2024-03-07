@@ -4,7 +4,6 @@ import gevent
 import board
 from flask import Flask, Response
 from flask_socketio import SocketIO
-from io import BytesIO
 from camera_output import CameraOutput
 from drivers.servo import Servo
 from drivers.lps2x_full import LPS22
@@ -69,7 +68,7 @@ def disconnect():
 @socketio.on('arm-parachute')
 def arm_parachute():
     print('arm-parachute')
-    
+
     camera.start()
 
     send_status(True, False)
@@ -114,24 +113,6 @@ def cancel_launch():
     global allow_launch 
     allow_launch = False
 
-# def record_video():
-#     camera.resolution = (640, 480)
-#     camera.start_recording(f'video{time.time()}.h264')
-#     camera.wait_recording(1200)
-
-# def generate_camera_stream(output):
-#     while True:
-#         with output.condition:h264
-#             output.condition.wait()
-#             frame = output.frame
-#         yield (b'--frame\r\n'
-#                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-# @app.route('/stream')
-# def video_feed():
-#     return Response(generate_camera_stream(),
-#                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
 def read_and_send_data():
     while True:
         print(barometer.pressure, barometer.temperature)
@@ -143,7 +124,6 @@ if __name__ == '__main__':
         output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
 
         gevent.spawn(read_and_send_data)
-        #gevent.spawn(record_video)
 
         socketio.run(app, port=5000, host='0.0.0.0', debug=False)
     except KeyboardInterrupt:
