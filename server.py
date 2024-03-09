@@ -1,10 +1,11 @@
+import os
 import csv
 import time
 import numpy as np
 from datetime import datetime
 import socketio
 import gevent
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_socketio import SocketIO
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
@@ -12,7 +13,7 @@ from drivers.piservo import PiServo
 from drivers.lps22 import Lps22
 from drivers.altimu10v6 import Altimu10V6
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='fe', static_url_path='')
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 
 def write_headers(headers, file):
@@ -48,7 +49,7 @@ def record_video(filename):
 def stop_video():
     camera.stop_recording()
 
-def read_and_send_data():
+def read_and_send_data(log_filename):
     while True:
         timestamp = time.time()
         acceleration = altimu.getData()
@@ -71,12 +72,12 @@ def wait_and_deploy_parachute():
         temperature = barometer.getTemperature()
         altitude = calculate_altitude(pressure, temperature)
         altitude_delta = altitude - previous_altitude if previous_altitude else 0
-        print(altitude_delta)
 
         if altitude_delta < -2: 
+            print(f"{altitude_delta} => moving servo...")
             servo.right()
 
-        gevent.sleep(0.02) # Send data every 0.02 seconds
+        gevent.sleep(2) # Send data every 0.02 seconds
         previous_altitude = altitude
 
 
@@ -126,6 +127,10 @@ def deploy_parachute():
 def launch():
     print('launch')
 
+@app.route('/')
+def index():
+    return send_from_directory(app.static_folder, 'index.html')
+
 if __name__ == '__main__':
     camera = Picamera2() # Init Camera
     servo = PiServo(13) # Init Servo
@@ -143,4 +148,7 @@ if __name__ == '__main__':
     gevent.spawn(record_video, video_filename)
     gevent.spawn(wait_and_deploy_parachute)
 
-    socketio.run(app, port=5000, host='0.0.0.0', debug=False)
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    ssl_cert_path = os.path.join(current_directory, 'certificate.crt')
+    ssl_key_path = os.path.join(current_directory, 'private.key')
+    socketio.run(app, port=5000, host='0.0.0.0', debug=False, certfile=ssl_cert_path, keyfile=ssl_key_path)
