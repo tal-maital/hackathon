@@ -1,14 +1,46 @@
-import socketio
+import csv
 import time
+import numpy as np
+from datetime import datetime
+import socketio
 import gevent
 from flask import Flask, Response
 from flask_socketio import SocketIO
-from picamera import PiCamera
+from picamera2 import Picamera2
+from picamera2.encoders import H264Encoder
 from io import BytesIO
 from camera_output import CameraOutput
+from drivers.piservo import Servo
+from drivers.camera import Camera
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
+servo = Servo
+
+def write_headers(headers, file):
+    with open(file, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(headers)
+
+def append_values(values, file):
+    with open(file, mode='a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(values)
+
+def calculate_altitude(pressure_hpa, temperature_c):
+    # Constants
+    temp_kelvin = temperature_c + 273.15  # Convert temperature to Kelvin
+    sea_level_pressure = 1013.25  # Sea level standard atmospheric pressure in hPa
+    gravitational_acceleration = 9.80665  # Acceleration due to gravity in m/s^2
+    molar_mass_air = 0.0289644  # Molar mass of Earth's air in kg/mol
+    universal_gas_constant = 8.3144598  # Universal gas constant in J/(mol*K)
+
+    # Barometric formula
+    altitude = ((universal_gas_constant * temp_kelvin) / (gravitational_acceleration * molar_mass_air)) \
+        * np.log(sea_level_pressure / pressure_hpa) # In meters
+
+    return altitude
+
 
 def send_status(parachute_armed, parachute_deployed):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed})
@@ -61,11 +93,11 @@ def arm_parachute():
     print('launch')
 
 def record_video():
-    camera = PiCamera()
-    camera.resolution = (640, 480)
-    camera.start_recording(f'video{time.time()}.h264')
-    camera.wait_recording(60)
-    camera.stop_recording()
+    camera = Picamera2()
+    video_config = camera.create_video_configuration()
+    camera.configure(video_config)
+    encoder = H264Encoder(10000000)
+    camera.start_recording(encoder, f'launch-{time.time()}.h264')
 
 def generate_camera_stream(output):
     while True:
@@ -82,11 +114,17 @@ def video_feed():
 
 def read_and_send_data():
     while True:
+        
         send_rocket_data(1)
         gevent.sleep(1) # Send data every 1 second, change this
 
 if __name__ == '__main__':
     output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
+    datetime_str = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    log_filename = f'flight_logs_{datetime_str}.csv'
+    log_headers = ["pressure", "total_accel",  ]
+
+    write_headers(log_headers, log_filename)
 
     gevent.spawn(read_and_send_data)
     gevent.spawn(record_video)
