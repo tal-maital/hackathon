@@ -32,7 +32,7 @@ def append_values(values, file):
 def main():
     log_filename = f'flight_logs_{datetime.now().strftime("%Y-%m-%d-%H%M%S")}.csv'
     log_headers = ["timestamp", "accel-x", "accel-y", "accel-z", "pressure", "temperature", "altitude"]
-    #    write_headers(log_headers, log_filename)
+    write_headers(log_headers, log_filename)
     
     altimu = Altimu10V6()  # Init Altimu10V6
     barometer = Lps22() # Init Lps22
@@ -42,8 +42,8 @@ def main():
         temp = barometer.getTemperature()
         altitude = calculate_altitude(pressure, temp) #- init_altitude
         accel = altimu.getData()  # Get the acceleration data
-        print(f"P: {pressure}, T: {temp}, Altitude: {altitude}, Accel: X={accel[0]}g, Y={accel[1]}g, Z={accel[2]}g             ", end = "\r>
-#        append_values([time.time() ,acceleration[0], acceleration[1], acceleration[2]], log_filename)
+        print(f"P: {pressure}, T: {temp}, Altitude: {altitude}, Accel: X={accel[0]}g, Y={accel[1]}g, Z={accel[2]}g    ", end = "\r>
+        append_values([time.time() ,acceleration[0], acceleration[1], acceleration[2]], log_filename)
         time.sleep(1)  # Sleep for a second to limit the rate of data fetching
 
 if __name__ == "__main__":

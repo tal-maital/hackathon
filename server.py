@@ -4,18 +4,16 @@ import numpy as np
 from datetime import datetime
 import socketio
 import gevent
-from flask import Flask, Response
+from flask import Flask
 from flask_socketio import SocketIO
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
-from io import BytesIO
-from camera_output import CameraOutput
-from drivers.piservo import Servo
-from drivers.camera import Camera
+from drivers.piservo import PiServo
+from drivers.lps22 import Lps22
+from drivers.altimu10v6 import Altimu10V6
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
-servo = Servo
 
 def write_headers(headers, file):
     with open(file, mode='w', newline='') as csvfile:
@@ -40,6 +38,46 @@ def calculate_altitude(pressure_hpa, temperature_c):
         * np.log(sea_level_pressure / pressure_hpa) # In meters
 
     return altitude
+
+def record_video(filename):
+    video_config = camera.create_video_configuration()
+    camera.configure(video_config)
+    encoder = H264Encoder(10000000)
+    camera.start_recording(encoder, filename)
+
+def stop_video():
+    camera.stop_recording()
+
+def read_and_send_data():
+    while True:
+        timestamp = time.time()
+        acceleration = altimu.getData()
+        pressure = barometer.getPressure()
+        temperature = barometer.getTemperature()
+        altitude = calculate_altitude(pressure, temperature)
+
+        append_values([timestamp, acceleration[0], acceleration[1], acceleration[2], pressure, 
+                       temperature, altitude], log_filename)
+        
+        send_rocket_data(altitude)
+
+        gevent.sleep(0.02) # Send data every 0.02 seconds
+
+def wait_and_deploy_parachute():
+    previous_altitude = None
+
+    while True:
+        pressure = barometer.getPressure()
+        temperature = barometer.getTemperature()
+        altitude = calculate_altitude(pressure, temperature)
+        altitude_delta = altitude - previous_altitude if previous_altitude else 0
+        print(altitude_delta)
+        
+        if altitude_delta < -2: 
+            servo.right()
+
+        gevent.sleep(0.02) # Send data every 0.02 seconds
+        previous_altitude = altitude
 
 
 def send_status(parachute_armed, parachute_deployed):
@@ -67,66 +105,41 @@ def disconnect():
 @socketio.on('arm-parachute')
 def arm_parachute():
     print('arm-parachute')
-
     send_status(True, False)
 
 @socketio.on('disarm-parachute')
-def arm_parachute():
+def disarm_parachute():
     print('disarm-parachute')
-
     send_status(False, False)
 
 @socketio.on('reset-parachute')
-def arm_parachute():
+def reset_parachute():
     print('reset-parachute')
-
     send_status(False, False)
 
 @socketio.on('deploy-parachute')
-def arm_parachute():
+def deploy_parachute():
     print('deploy-parachute')
-
     send_status(True, True)
 
 @socketio.on('launch')
-def arm_parachute():
+def launch():
     print('launch')
 
-def record_video():
-    camera = Picamera2()
-    video_config = camera.create_video_configuration()
-    camera.configure(video_config)
-    encoder = H264Encoder(10000000)
-    camera.start_recording(encoder, f'launch-{time.time()}.h264')
-
-def generate_camera_stream(output):
-    while True:
-        with output.condition:
-            output.condition.wait()
-            frame = output.frame
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-@app.route('/stream')
-def video_feed():
-    return Response(generate_camera_stream(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-def read_and_send_data():
-    while True:
-        
-        send_rocket_data(1)
-        gevent.sleep(1) # Send data every 1 second, change this
-
 if __name__ == '__main__':
-    output = CameraOutput(f'video-{time.time()}.h264', 'mjpeg')
+    camera = Picamera2() # Init Camera
+    servo = PiServo(13) # Init Servo
+    altimu = Altimu10V6()  # Init IMU
+    barometer = Lps22() # Init Barometer
+
     datetime_str = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    log_headers = ["timestamp", "acc-x", "acc-y", "acc-z", "pressure", "temperature", "altitude"]
     log_filename = f'flight_logs_{datetime_str}.csv'
-    log_headers = ["pressure", "total_accel",  ]
+    video_filename = f'flight_video_{datetime_str}.mp4'
 
     write_headers(log_headers, log_filename)
 
-    gevent.spawn(read_and_send_data)
-    gevent.spawn(record_video)
+    gevent.spawn(read_and_send_data, log_filename)
+    gevent.spawn(record_video, video_filename)
 
     socketio.run(app, port=5000, host='0.0.0.0', debug=False)
