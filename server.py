@@ -72,7 +72,7 @@ def wait_and_deploy_parachute():
         altitude = calculate_altitude(pressure, temperature)
         altitude_delta = altitude - previous_altitude if previous_altitude else 0
         print(altitude_delta)
-        
+
         if altitude_delta < -2: 
             servo.right()
 
@@ -141,5 +141,6 @@ if __name__ == '__main__':
 
     gevent.spawn(read_and_send_data, log_filename)
     gevent.spawn(record_video, video_filename)
+    gevent.spawn(wait_and_deploy_parachute)
 
     socketio.run(app, port=5000, host='0.0.0.0', debug=False)
