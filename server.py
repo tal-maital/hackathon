@@ -65,21 +65,24 @@ def read_and_send_data(log_filename):
         gevent.sleep(0.02) # Send data every 0.02 seconds
 
 def wait_and_deploy_parachute():
-    previous_altitude = None
+    max_altitude = None
 
     while True:
         pressure = barometer.getPressure()
         temperature = barometer.getTemperature()
-        altitude = calculate_altitude(pressure, temperature)
-        altitude_delta = altitude - previous_altitude if previous_altitude else 0
+        current_altitude = calculate_altitude(pressure, temperature)
 
-        if altitude_delta < -2: 
-            print(f"{altitude_delta} => moving servo...")
+        if max_altitude is None or current_altitude > max_altitude:
+            max_altitude = current_altitude
+        
+        altitude_threshold_for_deployment = 3  # In meters
+
+        if max_altitude - current_altitude > altitude_threshold_for_deployment:
+            print(f"Deploying! (max={max_altitude}, current={current_altitude})")
+            servo = PiServo(13) # Init Servo
             servo.right()
 
-        gevent.sleep(2) # Send data every 0.02 seconds
-        previous_altitude = altitude
-
+        gevent.sleep(0.02) # Send data every 0.02 seconds
 
 def send_status(parachute_armed, parachute_deployed):
     socketio.emit('status', { 'parachuteArmed': parachute_armed, 'parachuteDeployed': parachute_deployed})
@@ -133,7 +136,6 @@ def index():
 
 if __name__ == '__main__':
     camera = Picamera2() # Init Camera
-    servo = PiServo(13) # Init Servo
     altimu = Altimu10V6()  # Init IMU
     barometer = Lps22() # Init Barometer
 
