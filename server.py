@@ -78,9 +78,12 @@ def wait_and_deploy_parachute():
         altitude_threshold_for_deployment = 3  # In meters
 
         if max_altitude - current_altitude > altitude_threshold_for_deployment:
-            print(f"Deploying! (max={max_altitude}, current={current_altitude})")
-            servo = PiServo(13) # Init Servo
-            servo.right()
+            try:
+                print(f"Deploying! (max={max_altitude}, current={current_altitude})")
+                piservo = PiServo(13) # Init Servo
+                piservo.right()
+            except Exception as error:
+                print(f"wait_and_deploy_parachute error: {error}")
 
         gevent.sleep(0.02) # Send data every 0.02 seconds
 
