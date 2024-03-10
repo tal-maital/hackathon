@@ -83,7 +83,7 @@ def wait_and_deploy_parachute():
                 piservo = PiServo(13) # Init Servo
                 piservo.right()
                 max_altitude = None
-                
+
             except Exception as error:
                 print(f"wait_and_deploy_parachute error: {error}")
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     datetime_str = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     log_headers = ["timestamp", "acc-x", "acc-y", "acc-z", "pressure", "temperature", "altitude"]
     log_filename = f'flight_logs_{datetime_str}.csv'
-    video_filename = f'flight_video_{datetime_str}.mp4'
+    video_filename = f'flight_video_{datetime_str}.h264'
 
     write_headers(log_headers, log_filename)
 
