@@ -81,7 +81,7 @@ def wait_and_deploy_parachute():
             try:
                 print(f"Deploying! (max={max_altitude}, current={current_altitude})")
                 piservo = PiServo(13) # Init Servo
-                piservo.right()
+                piservo.left()
                 max_altitude = None
 
             except Exception as error:
