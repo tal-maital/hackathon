@@ -67,6 +67,7 @@ def read_and_send_data(log_filename):
 def wait_and_deploy_parachute():
     max_altitude = None
 
+
     while True:
         pressure = barometer.getPressure()
         temperature = barometer.getTemperature()
@@ -82,6 +83,7 @@ def wait_and_deploy_parachute():
                 print(f"Deploying! (max={max_altitude}, current={current_altitude})")
                 piservo = PiServo(13) # Init Servo
                 piservo.right()
+                max_altitude = None
             except Exception as error:
                 print(f"wait_and_deploy_parachute error: {error}")
 
